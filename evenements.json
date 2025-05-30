@@ -3,6 +3,23 @@
     "type": "sportive",
     "date": "2023-12-12",
     "lieu": "BOBO",
+    "inscrits": [
+      "sabf"
+    ]
+  },
+  {
+    "type": "cultural",
+    "date": "2025",
+    "lieu": "OUAGA",
     "inscrits": []
+  },
+  {
+    "nom": "FESPACO",
+    "type": "culturel",
+    "date": "2025-02-27",
+    "lieu": "OUAGADOUGOU",
+    "inscrits": [
+      "MAGAli"
+    ]
   }
 ]
