@@ -1,0 +1,222 @@
+import tkinter as tk
+from tkinter import messagebox, simpledialog, filedialog
+import json
+import csv
+
+FICHIER_JSON = "evenements.json"
+
+def charger_evenements():
+    try:
+        with open(FICHIER_JSON, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+
+def sauvegarder_evenements(evenements):
+    with open(FICHIER_JSON, "w") as f:
+        json.dump(evenements, f, indent=2)
+
+class Application(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.configure(bg="#2c3e50")
+        self.geometry("1080x720")
+
+        # Dictionnaire des textes en français et anglais
+        self.textes = {
+            "fr": {
+                "title": "FASO SPORT & CULTURE EVENTS",
+                "menu": "MENU",
+                "creer": "Créer un événement",
+                "ajouter": "Ajouter un inscrit",
+                "rechercher": "Rechercher",
+                "exporter": "Exporter des inscrits",
+                "rafraichir": "Rafraîchir la liste",
+                "type": "Type d'événement (sportif/culturel) :",
+                "date": "Date (AAAA-MM-JJ) :",
+                "lieu": "Lieu de l’événement :",
+                "nom": "Nom de l’inscrit :",
+                "critere": "Rechercher par 'type' ou 'date' :",
+                "valeur": "Valeur à rechercher :",
+                "aucun_event": "Aucun événement trouvé.",
+                "aucun_selection": "Sélectionnez un événement.",
+                "succes_cree": "Événement créé.",
+                "succes_ajout": "Inscrit ajouté.",
+                "export_succes": "Inscrits exportés avec succès.",
+                "incomplet": "Tous les champs sont obligatoires."
+            },
+            "en": {
+                "title": "FASO SPORT & CULTURE EVENTS",
+                "menu": "MENU",
+                "creer": "Create an event",
+                "ajouter": "Add a participant",
+                "rechercher": "Search",
+                "exporter": "Export participants",
+                "rafraichir": "Refresh list",
+                "type": "Event type (sport/cultural):",
+                "date": "Date (YYYY-MM-DD):",
+                "lieu": "Event location:",
+                "nom": "Participant name:",
+                "critere": "Search by 'type' or 'date':",
+                "valeur": "Value to search:",
+                "aucun_event": "No event found.",
+                "aucun_selection": "Select an event.",
+                "succes_cree": "Event created.",
+                "succes_ajout": "Participant added.",
+                "export_succes": "Participants exported successfully.",
+                "incomplet": "All fields are required."
+            }
+        }
+        self.langue = "fr"
+
+        self.title(self.textes[self.langue]["title"])
+
+        self.evenements = charger_evenements()
+
+        self.font_title = ("Helvetica", 24, "bold")
+        self.font_btn = ("Helvetica", 12)
+        self.font_list = ("Consolas", 12)
+
+        # Cadre principal
+        label_title = tk.Label(self, text=self.textes[self.langue]["title"], font=self.font_title, fg="white", bg="#2c3e50")
+        label_title.pack(pady=20)
+        self.label_title = label_title  # pour mise à jour
+
+        main_frame = tk.Frame(self, bg="#2c3e50")
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+
+        frame_btn = tk.Frame(main_frame, bg="#2c3e50")
+        frame_btn.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 20))
+
+        # Bouton FR-ENG pour changer la langue
+        self.btn_fr_eng = tk.Button(
+            frame_btn, text="FR-ENG", font=self.font_btn,
+            bg="#16a085", fg="white", activebackground="#1abc9c", activeforeground="white",
+            relief=tk.FLAT, padx=15, pady=8, command=self.toggle_langue
+        )
+        self.btn_fr_eng.pack(fill=tk.X, pady=(0, 5))
+
+        # Bouton MENU qui va disparaître après clic
+        self.menu_btn = tk.Button(frame_btn, text=self.textes[self.langue]["menu"], font=self.font_btn,
+                                  bg="#2980b9", fg="white", activebackground="#3498db", activeforeground="white",
+                                  relief=tk.FLAT, padx=15, pady=8, command=self.afficher_actions)
+        self.menu_btn.pack(fill=tk.X, pady=10)
+
+        # Frame qui contiendra les boutons d'action, caché au départ
+        self.actions_frame = tk.Frame(frame_btn, bg="#2c3e50")
+
+        # Les boutons à afficher après clic sur MENU
+        self.btn_creer = tk.Button(self.actions_frame, text=self.textes[self.langue]["creer"], command=self.creer_evenement, font=self.font_btn,
+                                   bg="#2980b9", fg="white", activebackground="#3498db", activeforeground="white",
+                                   relief=tk.FLAT, padx=15, pady=8)
+        self.btn_ajouter = tk.Button(self.actions_frame, text=self.textes[self.langue]["ajouter"], command=self.ajouter_inscrit, font=self.font_btn,
+                                     bg="#2980b9", fg="white", activebackground="#3498db", activeforeground="white",
+                                     relief=tk.FLAT, padx=15, pady=8)
+        self.btn_rechercher = tk.Button(self.actions_frame, text=self.textes[self.langue]["rechercher"], command=self.rechercher_evenement, font=self.font_btn,
+                                        bg="#2980b9", fg="white", activebackground="#3498db", activeforeground="white",
+                                        relief=tk.FLAT, padx=15, pady=8)
+        self.btn_exporter = tk.Button(self.actions_frame, text=self.textes[self.langue]["exporter"], command=self.exporter_inscrits, font=self.font_btn,
+                                      bg="#2980b9", fg="white", activebackground="#3498db", activeforeground="white",
+                                      relief=tk.FLAT, padx=15, pady=8)
+        self.btn_rafraichir = tk.Button(self.actions_frame, text=self.textes[self.langue]["rafraichir"], command=self.afficher_evenements, font=self.font_btn,
+                                        bg="#2980b9", fg="white", activebackground="#3498db", activeforeground="white",
+                                        relief=tk.FLAT, padx=15, pady=8)
+
+        # Cadre pour la liste des événements (à droite)
+        frame_list = tk.Frame(main_frame, bg="#9273c2")
+        frame_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        scrollbar = tk.Scrollbar(frame_list)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.listebox = tk.Listbox(frame_list, width=80, height=20, font=self.font_list, yscrollcommand=scrollbar.set,
+                                  bg="#ecf0f1", fg="#2c3e50", selectbackground="#2980b9", selectforeground="white", bd=0)
+        self.listebox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=self.listebox.yview)
+
+        self.afficher_evenements()
+
+    def toggle_langue(self):
+        self.langue = "en" if self.langue == "fr" else "fr"
+        self.title(self.textes[self.langue]["title"])
+        self.label_title.config(text=self.textes[self.langue]["title"])
+        self.menu_btn.config(text=self.textes[self.langue]["menu"])
+        self.btn_creer.config(text=self.textes[self.langue]["creer"])
+        self.btn_ajouter.config(text=self.textes[self.langue]["ajouter"])
+        self.btn_rechercher.config(text=self.textes[self.langue]["rechercher"])
+        self.btn_exporter.config(text=self.textes[self.langue]["exporter"])
+        self.btn_rafraichir.config(text=self.textes[self.langue]["rafraichir"])
+
+    def afficher_actions(self):
+        self.menu_btn.pack_forget()  # Retirer le bouton MENU
+
+        # Afficher les boutons d'action
+        self.actions_frame.pack(fill=tk.X, pady=5)
+        self.btn_creer.pack(fill=tk.X, pady=5)
+        self.btn_ajouter.pack(fill=tk.X, pady=5)
+        self.btn_rechercher.pack(fill=tk.X, pady=5)
+        self.btn_exporter.pack(fill=tk.X, pady=5)
+        self.btn_rafraichir.pack(fill=tk.X, pady=5)
+
+    def afficher_evenements(self):
+        self.listebox.delete(0, tk.END)
+        for i, event in enumerate(self.evenements):
+            ligne = f"{i}. {event['type'].capitalize()} - {event['date']} à {event['lieu']} ({len(event['inscrits'])} inscrit(s))"
+            self.listebox.insert(tk.END, ligne)
+
+    def creer_evenement(self):
+        type_event = simpledialog.askstring(self.textes[self.langue]["creer"], self.textes[self.langue]["type"], parent=self)
+        date = simpledialog.askstring(self.textes[self.langue]["creer"], self.textes[self.langue]["date"], parent=self)
+        lieu = simpledialog.askstring(self.textes[self.langue]["creer"], self.textes[self.langue]["lieu"], parent=self)
+        if type_event and date and lieu:
+            self.evenements.append({"type": type_event, "date": date, "lieu": lieu, "inscrits": []})
+            sauvegarder_evenements(self.evenements)
+            self.afficher_evenements()
+            messagebox.showinfo(self.textes[self.langue]["creer"], self.textes[self.langue]["succes_cree"])
+        else:
+            messagebox.showwarning(self.textes[self.langue]["creer"], self.textes[self.langue]["incomplet"])
+
+    def ajouter_inscrit(self):
+        selection = self.listebox.curselection()
+        if not selection:
+            messagebox.showwarning(self.textes[self.langue]["ajouter"], self.textes[self.langue]["aucun_selection"], parent=self)
+            return
+        index = selection[0]
+        nom = simpledialog.askstring(self.textes[self.langue]["ajouter"], self.textes[self.langue]["nom"], parent=self)
+        if nom:
+            self.evenements[index]["inscrits"].append(nom)
+            sauvegarder_evenements(self.evenements)
+            self.afficher_evenements()
+            messagebox.showinfo(self.textes[self.langue]["ajouter"], self.textes[self.langue]["succes_ajout"], parent=self)
+
+    def rechercher_evenement(self):
+        critere = simpledialog.askstring(self.textes[self.langue]["rechercher"], self.textes[self.langue]["critere"], parent=self)
+        valeur = simpledialog.askstring(self.textes[self.langue]["rechercher"], self.textes[self.langue]["valeur"], parent=self)
+        if critere and valeur:
+            resultats = [e for e in self.evenements if e.get(critere) == valeur]
+            self.listebox.delete(0, tk.END)
+            if resultats:
+                for i, event in enumerate(resultats):
+                    ligne = f"{event['type'].capitalize()} - {event['date']} à {event['lieu']} ({len(event['inscrits'])} inscrit(s))"
+                    self.listebox.insert(tk.END, ligne)
+            else:
+                self.listebox.insert(tk.END, self.textes[self.langue]["aucun_event"])
+
+    def exporter_inscrits(self):
+        selection = self.listebox.curselection()
+        if not selection:
+            messagebox.showwarning(self.textes[self.langue]["exporter"], self.textes[self.langue]["aucun_selection"], parent=self)
+            return
+        index = selection[0]
+        nom_fichier = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        if nom_fichier:
+            with open(nom_fichier, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["Nom des inscrits"])
+                for nom in self.evenements[index]["inscrits"]:
+                    writer.writerow([nom])
+            messagebox.showinfo(self.textes[self.langue]["exporter"], self.textes[self.langue]["export_succes"], parent=self)
+
+if __name__ == "__main__":
+    app = Application()
+    app.mainloop()
